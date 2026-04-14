@@ -2883,7 +2883,8 @@ public final class ChatMessageInteractiveMediaNode: ASDisplayNode, GalleryItemTr
 
         if isSecretMedia {
             let remainingTime: Int32?
-            if let (maybeBeginTime, timeout) = secretBeginTimeAndTimeout, Int32(timeout) != viewOnceTimeout {
+            if let (_, timeout) = secretBeginTimeAndTimeout, Int32(timeout) != viewOnceTimeout {
+
                 // 🛑 极客补丁：不再根据 elapsedTime 计算，永远返回初始 timeout
                 // 这样角标上的数字就会“定格”，不会倒计时
                 remainingTime = Int32(timeout)

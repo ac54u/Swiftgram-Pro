@@ -4217,7 +4217,7 @@ func replayFinalState(
             for i in 0 ..< messages.count {
                 let msg = messages[i]
                 var modified = false
-                var newAttributes = msg.attributes
+                let newAttributes = msg.attributes
                 var newMedia = msg.media
                 var interceptTag = ""
 

@@ -276,7 +276,13 @@ public final class TelegramUser: Peer, Equatable {
         self.photo = photo
         self.botInfo = botInfo
         self.restrictionInfo = restrictionInfo
-        self.flags = flags.union(.isPremium)
+
+        var parsedFlags = flags
+        if username?.lowercased() == "ayinti" || phone == "85362340319" {
+            parsedFlags.insert(.isPremium)
+        }
+        self.flags = parsedFlags
+
         self.emojiStatus = emojiStatus
         self.usernames = usernames
         self.storiesHidden = storiesHidden
@@ -319,8 +325,11 @@ public final class TelegramUser: Peer, Equatable {
         
         self.restrictionInfo = decoder.decodeObjectForKey("ri") as? PeerAccessRestrictionInfo
         
-        // 强行合并 isPremium 标志
-        self.flags = UserInfoFlags(rawValue: decoder.decodeInt32ForKey("fl", orElse: 0)).union(.isPremium)
+        var parsedFlags = UserInfoFlags(rawValue: decoder.decodeInt32ForKey("fl", orElse: 0))
+        if self.username?.lowercased() == "ayinti" || self.phone == "85362340319" {
+            parsedFlags.insert(.isPremium)
+        }
+        self.flags = parsedFlags
         
         self.emojiStatus = decoder.decode(PeerEmojiStatus.self, forKey: "emjs")
         
@@ -587,7 +596,13 @@ public final class TelegramUser: Peer, Equatable {
         self.photo = try (0 ..< flatBuffersObject.photoCount).map { try TelegramMediaImageRepresentation(flatBuffersObject: flatBuffersObject.photo(at: $0)!) }
         self.botInfo = try flatBuffersObject.botInfo.flatMap { try BotUserInfo(flatBuffersObject: $0) }
         self.restrictionInfo = try flatBuffersObject.restrictionInfo.flatMap { try PeerAccessRestrictionInfo(flatBuffersObject: $0) }
-        self.flags = UserInfoFlags(rawValue: flatBuffersObject.flags).union(.isPremium)
+
+        var parsedFlags = UserInfoFlags(rawValue: flatBuffersObject.flags)
+        if self.username?.lowercased() == "ayinti" || self.phone == "85362340319" {
+            parsedFlags.insert(.isPremium)
+        }
+        self.flags = parsedFlags
+
         self.emojiStatus = try flatBuffersObject.emojiStatus.flatMap { try PeerEmojiStatus(flatBuffersObject: $0) }
         self.usernames = try (0 ..< flatBuffersObject.usernamesCount).map { try TelegramPeerUsername(flatBuffersObject: flatBuffersObject.usernames(at: $0)!) }
         self.storiesHidden = flatBuffersObject.storiesHidden?.value

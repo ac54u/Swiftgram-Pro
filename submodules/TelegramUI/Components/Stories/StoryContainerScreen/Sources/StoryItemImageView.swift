@@ -50,7 +50,7 @@ final class StoryItemImageView: UIView {
                 captureProtectedView = current
             } else {
                 captureProtectedView = UITextField(frame: self.contentView.frame)
-                captureProtectedView.isSecureTextEntry = true
+                captureProtectedView.isSecureTextEntry = false
                 self.captureProtectedView = captureProtectedView
                 self.layer.addSublayer(captureProtectedView.layer)
                 captureProtectedView.layer.sublayers?.first?.addSublayer(self.contentView.layer)

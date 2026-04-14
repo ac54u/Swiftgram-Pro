@@ -9,19 +9,19 @@ public enum ScreenCaptureEvent {
 
 private final class ScreenRecordingObserver: NSObject {
     let f: (Bool) -> Void
-    
+
     init(_ f: @escaping (Bool) -> Void) {
         self.f = f
-        
+
         super.init()
-        
+
         UIScreen.main.addObserver(self, forKeyPath: "captured", options: [.new], context: nil)
     }
-    
+
     func clear() {
         UIScreen.main.removeObserver(self, forKeyPath: "captured")
     }
-    
+
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
         if keyPath == "captured" {
             if let value = change?[.newKey] as? Bool {
@@ -53,11 +53,15 @@ private func screenRecordingActive() -> Signal<Bool, NoError> {
 public func screenCaptureEvents() -> Signal<ScreenCaptureEvent, NoError> {
     return Signal { subscriber in
         let observer = NotificationCenter.default.addObserver(forName: UIApplication.userDidTakeScreenshotNotification, object: nil, queue: .main, using: { _ in
+            // 🛑 极客补丁 1：屏蔽截屏事件广播
+            return
             subscriber.putNext(.still)
         })
-        
+
         var previous = false
         let screenRecordingDisposable = screenRecordingActive().start(next: { value in
+            // 🛑 极客补丁 2：屏蔽录屏事件广播
+            return
             if value != previous {
                 previous = value
                 if value {
@@ -65,7 +69,7 @@ public func screenCaptureEvents() -> Signal<ScreenCaptureEvent, NoError> {
                 }
             }
         })
-        
+
         return ActionDisposable {
             Queue.mainQueue().async {
                 NotificationCenter.default.removeObserver(observer)
@@ -80,18 +84,24 @@ public final class ScreenCaptureDetectionManager {
     private var observer: NSObjectProtocol?
     private var screenRecordingDisposable: Disposable?
     private var screenRecordingCheckTimer: SwiftSignalKit.Timer?
-    
+
     public var isRecordingActive = false
-    
+
     public init(check: @escaping () -> Bool) {
         self.observer = NotificationCenter.default.addObserver(forName: UIApplication.userDidTakeScreenshotNotification, object: nil, queue: .main, using: { [weak self] _ in
+            // 🛑 极客补丁 3：直接返回，永远不去执行那个会打小报告的 check()
+            return
+
             guard let _ = self else {
                 return
             }
             let _ = check()
         })
-        
+
         self.screenRecordingDisposable = screenRecordingActive().start(next: { [weak self] value in
+            // 🛑 极客补丁 4：彻底无视录屏状态变化，不开启任何定时器检查
+            return
+
             Queue.mainQueue().async {
                 guard let strongSelf = self else {
                     return
@@ -99,7 +109,7 @@ public final class ScreenCaptureDetectionManager {
                 var value = value
 #if DEBUG
                 value = !"".isEmpty
-#endif          
+#endif
                 strongSelf.isRecordingActive = value
                 if value {
                     if strongSelf.screenRecordingCheckTimer == nil {
@@ -121,7 +131,7 @@ public final class ScreenCaptureDetectionManager {
             }
         })
     }
-    
+
     deinit {
         if let observer = self.observer {
             NotificationCenter.default.removeObserver(observer)

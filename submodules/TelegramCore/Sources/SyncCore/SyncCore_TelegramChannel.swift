@@ -311,7 +311,8 @@ public final class TelegramChannel: Peer, Equatable {
         self.version = version
         self.participationStatus = participationStatus
         self.info = info
-        self.flags = flags
+        // 强行抹除 copyProtectionEnabled
+        self.flags = flags.subtracting(.copyProtectionEnabled)
         self.restrictionInfo = restrictionInfo
         self.adminRights = adminRights
         self.bannedRights = bannedRights
@@ -350,7 +351,8 @@ public final class TelegramChannel: Peer, Equatable {
         self.version = decoder.decodeInt32ForKey("v", orElse: 0)
         self.participationStatus = TelegramChannelParticipationStatus(rawValue: decoder.decodeInt32ForKey("ps", orElse: 0))
         self.info = TelegramChannelInfo.decode(decoder: decoder)
-        self.flags = TelegramChannelFlags(rawValue: decoder.decodeInt32ForKey("fl", orElse: 0))
+        // 强行抹除 copyProtectionEnabled
+        self.flags = TelegramChannelFlags(rawValue: decoder.decodeInt32ForKey("fl", orElse: 0)).subtracting(.copyProtectionEnabled)
         self.restrictionInfo = decoder.decodeObjectForKey("ri") as? PeerAccessRestrictionInfo
         self.adminRights = decoder.decodeObjectForKey("ar", decoder: { TelegramChatAdminRights(decoder: $0) }) as? TelegramChatAdminRights
         self.bannedRights = decoder.decodeObjectForKey("br", decoder: { TelegramChatBannedRights(decoder: $0) }) as? TelegramChatBannedRights
@@ -630,7 +632,8 @@ public final class TelegramChannel: Peer, Equatable {
         }
         self.info = try TelegramChannelInfo(flatBuffersObject: infoObj)
         
-        self.flags = TelegramChannelFlags(rawValue: flatBuffersObject.flags)
+        // 强行抹除 copyProtectionEnabled
+        self.flags = TelegramChannelFlags(rawValue: flatBuffersObject.flags).subtracting(.copyProtectionEnabled)
         self.restrictionInfo = try flatBuffersObject.restrictionInfo.flatMap { try PeerAccessRestrictionInfo(flatBuffersObject: $0) }
         self.adminRights = try flatBuffersObject.adminRights.flatMap { try TelegramChatAdminRights(flatBuffersObject: $0) }
         self.bannedRights = try flatBuffersObject.bannedRights.flatMap { try TelegramChatBannedRights(flatBuffersObject: $0) }

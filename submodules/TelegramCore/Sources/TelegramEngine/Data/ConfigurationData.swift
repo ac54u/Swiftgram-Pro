@@ -57,7 +57,7 @@ public enum EngineConfiguration {
         public let maxStoriesWeeklyCount: Int32
         public let maxStoriesMonthlyCount: Int32
         public let maxStoriesSuggestedReactions: Int32
-        public target maxStoriesLinksCount: Int32
+        public let maxStoriesLinksCount: Int32
         public let maxGiveawayChannelsCount: Int32
         public let maxGiveawayCountriesCount: Int32
         public let maxGiveawayPeriodSeconds: Int32

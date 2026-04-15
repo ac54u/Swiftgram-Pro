@@ -57,7 +57,7 @@ public enum EngineConfiguration {
         public let maxStoriesWeeklyCount: Int32
         public let maxStoriesMonthlyCount: Int32
         public let maxStoriesSuggestedReactions: Int32
-        public let maxStoriesLinksCount: Int32
+        public target maxStoriesLinksCount: Int32
         public let maxGiveawayChannelsCount: Int32
         public let maxGiveawayCountriesCount: Int32
         public let maxGiveawayPeriodSeconds: Int32
@@ -69,11 +69,9 @@ public enum EngineConfiguration {
         }
 
         public init(
-            // ================== [🚀 Swiftgram-Pro: 本地置顶限制全解锁] ==================
-            self.maxPinnedChatCount = 999         // 主聊天列表：无限置顶
-            self.maxPinnedSavedChatCount = 999    // 收藏夹：无限置顶
-            self.maxArchivedPinnedChatCount = 999 // 归档列表：无限置顶
-            // =========================================================================
+            maxPinnedChatCount: Int32,
+            maxPinnedSavedChatCount: Int32,
+            maxArchivedPinnedChatCount: Int32,
             maxChannelsCount: Int32,
             maxPublicLinksCount: Int32,
             maxSavedGifCount: Int32,
@@ -99,9 +97,13 @@ public enum EngineConfiguration {
             maxChannelRecommendationsCount: Int32,
             maxConferenceParticipantCount: Int32
         ) {
-            self.maxPinnedChatCount = maxPinnedChatCount
-            self.maxPinnedSavedChatCount = maxPinnedSavedChatCount
-            self.maxArchivedPinnedChatCount = maxArchivedPinnedChatCount
+            // ================== [🚀 Swiftgram-Pro: 本地置顶限制全解锁] ==================
+            // 极客补丁：强制赋值为 999，无视系统传入的官方限制
+            self.maxPinnedChatCount = 999
+            self.maxPinnedSavedChatCount = 999
+            self.maxArchivedPinnedChatCount = 999
+            // =========================================================================
+
             self.maxChannelsCount = maxChannelsCount
             self.maxPublicLinksCount = maxPublicLinksCount
             self.maxSavedGifCount = maxSavedGifCount

@@ -4,7 +4,7 @@ import Postbox
 public enum EngineConfiguration {
     public struct Limits: Equatable {
         public static let timeIntervalForever: Int32 = 0x7fffffff
-        
+
         public var maxGroupMemberCount: Int32
         public var maxSupergroupMemberCount: Int32
         public var maxMessageForwardBatchSize: Int32
@@ -34,7 +34,7 @@ public enum EngineConfiguration {
             self.maxMessageRevokeIntervalInPrivateChats = maxMessageRevokeIntervalInPrivateChats
         }
     }
-    
+
     public struct UserLimits: Equatable {
         public let maxPinnedChatCount: Int32
         public let maxPinnedSavedChatCount: Int32
@@ -63,15 +63,17 @@ public enum EngineConfiguration {
         public let maxGiveawayPeriodSeconds: Int32
         public let maxChannelRecommendationsCount: Int32
         public let maxConferenceParticipantCount: Int32
-        
+
         public static var defaultValue: UserLimits {
             return UserLimits(UserLimitsConfiguration.defaultValue)
         }
 
         public init(
-            maxPinnedChatCount: Int32,
-            maxPinnedSavedChatCount: Int32,
-            maxArchivedPinnedChatCount: Int32,
+            // ================== [🚀 Swiftgram-Pro: 本地置顶限制全解锁] ==================
+            self.maxPinnedChatCount = 999         // 主聊天列表：无限置顶
+            self.maxPinnedSavedChatCount = 999    // 收藏夹：无限置顶
+            self.maxArchivedPinnedChatCount = 999 // 归档列表：无限置顶
+            // =========================================================================
             maxChannelsCount: Int32,
             maxPublicLinksCount: Int32,
             maxSavedGifCount: Int32,
@@ -143,7 +145,7 @@ public extension EngineConfiguration.Limits {
             maxMessageRevokeIntervalInPrivateChats: limitsConfiguration.maxMessageRevokeIntervalInPrivateChats
         )
     }
-    
+
     func _asLimits() -> LimitsConfiguration {
         return LimitsConfiguration(
             maxGroupMemberCount: self.maxGroupMemberCount,
@@ -197,7 +199,7 @@ public extension EngineConfiguration {
         public var imageBotUsername: String?
         public var gifBotUsername: String?
         public var venueBotUsername: String?
-        
+
         public init(
             imageBotUsername: String?,
             gifBotUsername: String?,
@@ -262,7 +264,7 @@ public extension TelegramEngine.EngineData.Item {
                 return appConfiguration
             }
         }
-        
+
         public struct Limits: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineConfiguration.Limits
 
@@ -283,19 +285,19 @@ public extension TelegramEngine.EngineData.Item {
                 return EngineConfiguration.Limits(limitsConfiguration)
             }
         }
-        
+
         public struct UserLimits: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineConfiguration.UserLimits
-            
+
             fileprivate let isPremium: Bool
             public init(isPremium: Bool) {
                 self.isPremium = isPremium
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.appConfiguration]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -306,17 +308,17 @@ public extension TelegramEngine.EngineData.Item {
                 return EngineConfiguration.UserLimits(UserLimitsConfiguration(appConfiguration: appConfiguration, isPremium: self.isPremium))
             }
         }
-        
+
         public struct SuggestedLocalization: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = SuggestedLocalizationEntry?
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.suggestedLocalization]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -330,14 +332,14 @@ public extension TelegramEngine.EngineData.Item {
 
         public struct SearchBots: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineConfiguration.SearchBots
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.searchBotsConfiguration]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -348,19 +350,19 @@ public extension TelegramEngine.EngineData.Item {
                 return EngineConfiguration.SearchBots(value)
             }
         }
-        
+
         public struct ApplicationSpecificPreference: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = PreferencesEntry?
-            
+
             private let itemKey: ValueBoxKey
             public init(key: ValueBoxKey) {
                 self.itemKey = key
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([self.itemKey]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -371,17 +373,17 @@ public extension TelegramEngine.EngineData.Item {
                 return value
             }
         }
-        
+
         public struct ContentSettings: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineContentSettings
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.appConfiguration]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -392,17 +394,17 @@ public extension TelegramEngine.EngineData.Item {
                 return EngineContentSettings(appConfiguration: appConfiguration)
             }
         }
-        
+
         public struct LocalizationList: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = LocalizationListState
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.localizationListState]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -413,17 +415,17 @@ public extension TelegramEngine.EngineData.Item {
                 return localizationListState
             }
         }
-        
+
         public struct PremiumPromo: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = PremiumPromoConfiguration
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.premiumPromo]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -434,17 +436,17 @@ public extension TelegramEngine.EngineData.Item {
                 return premiumPromoConfiguration
             }
         }
-        
+
         public struct GlobalAutoremoveTimeout: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = Int32?
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.globalMessageAutoremoveTimeoutSettings]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -455,17 +457,17 @@ public extension TelegramEngine.EngineData.Item {
                 return settings.messageAutoremoveTimeout
             }
         }
-        
+
         public struct Links: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineConfiguration.Links
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.linksConfiguration]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -476,17 +478,17 @@ public extension TelegramEngine.EngineData.Item {
                 return EngineConfiguration.Links(value)
             }
         }
-        
+
         public struct GlobalPrivacy: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = GlobalPrivacySettings
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.globalPrivacySettings]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -497,17 +499,17 @@ public extension TelegramEngine.EngineData.Item {
                 return value
             }
         }
-        
+
         public struct StoryConfigurationState: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = Stories.ConfigurationState
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.storiesConfiguration]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -518,17 +520,17 @@ public extension TelegramEngine.EngineData.Item {
                 return value
             }
         }
-        
+
         public struct AudioTranscriptionTrial: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = AudioTranscription.TrialState
-            
+
             public init() {
             }
-            
+
             var key: PostboxViewKey {
                 return .preferences(keys: Set([PreferencesKeys.audioTranscriptionTrialState]))
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? PreferencesView else {
                     preconditionFailure()
@@ -539,16 +541,16 @@ public extension TelegramEngine.EngineData.Item {
                 return value
             }
         }
-        
+
         public struct AvailableColorOptions: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EngineAvailableColorOptions
-            
+
             public let scope: PeerColorsScope
-            
+
             public init(scope: PeerColorsScope) {
                 self.scope = scope
             }
-            
+
             var key: PostboxViewKey {
                 let key = ValueBoxKey(length: 8)
                 switch scope {
@@ -560,7 +562,7 @@ public extension TelegramEngine.EngineData.Item {
                 let viewKey: PostboxViewKey = .cachedItem(ItemCacheEntryId(collectionId: Namespaces.CachedItemCollection.peerColorOptions, key: key))
                 return viewKey
             }
-            
+
             func extract(view: PostboxView) -> Result {
                 guard let view = view as? CachedItemView else {
                     preconditionFailure()
@@ -571,7 +573,7 @@ public extension TelegramEngine.EngineData.Item {
                 return value
             }
         }
-        
+
         public struct EmojiGame: TelegramEngineDataItem, PostboxViewDataItem {
             public typealias Result = EmojiGameInfo
 

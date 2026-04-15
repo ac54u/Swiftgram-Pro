@@ -3007,10 +3007,19 @@ public extension Api {
                 }
                 if Int(_data.flags) & Int(1 << 0) != 0 {
                     buffer.appendInt32(481674261)
-                    buffer.appendInt32(Int32(_data.order!.count))
-                    for item in _data.order! {
+
+                    // ================== [🚀 Swiftgram-Pro: 物理层云端欺骗] ==================
+                    // 极客补丁：在这里强行截断！无论本地钉了多少个，发给服务器的永远只取前 5 个。
+                    // 这样服务器收到的请求就是合法的，不会返回 PINNED_DIALOGS_TOO_MUCH。
+                    let serverLimit: Int = 5 // 如果你的账号是 Premium，可以根据需要改为 10
+                    let originalOrder = _data.order ?? []
+                    let truncatedOrder = originalOrder.count > serverLimit ? Array(originalOrder.prefix(serverLimit)) : originalOrder
+
+                    buffer.appendInt32(Int32(truncatedOrder.count))
+                    for item in truncatedOrder {
                         item.serialize(buffer, true)
                     }
+                    // =========================================================================
                 }
                 break
             case .updatePinnedForumTopic(let _data):

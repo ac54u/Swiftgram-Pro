@@ -29,12 +29,12 @@ public struct UserLimitsConfiguration: Equatable {
     public var maxGiveawayPeriodSeconds: Int32
     public var maxChannelRecommendationsCount: Int32
     public var maxConferenceParticipantCount: Int32
-    
+
     public static var defaultValue: UserLimitsConfiguration {
         return UserLimitsConfiguration(
-            maxPinnedChatCount: 5,
-            maxPinnedSavedChatCount: 5,
-            maxArchivedPinnedChatCount: 100,
+            maxPinnedChatCount: 999,          // 🛑 极客补丁：原为 5
+            maxPinnedSavedChatCount: 999,          // 🛑 极客补丁：原为 5
+            maxArchivedPinnedChatCount: 999,  // 🛑 极客补丁：原为 100
             maxChannelsCount: 500,
             maxPublicLinksCount: 10,
             maxSavedGifCount: 200,
@@ -91,9 +91,14 @@ public struct UserLimitsConfiguration: Equatable {
         maxChannelRecommendationsCount: Int32,
         maxConferenceParticipantCount: Int32
     ) {
-        self.maxPinnedChatCount = maxPinnedChatCount
-        self.maxPinnedSavedChatCount = maxPinnedSavedChatCount
-        self.maxArchivedPinnedChatCount = maxArchivedPinnedChatCount
+        // ================== [🚀 Swiftgram-Pro: 本地置顶限制全解锁] ==================
+        // 极客补丁：无视外部传参，强行锁死为 999 (无限置顶)
+        self.maxPinnedChatCount = 999
+        self.maxPinnedSavedChatCount = 999
+        self.maxArchivedPinnedChatCount = 999
+        // =========================================================================
+
+        // 以下保持原样，正常接收云端配置
         self.maxChannelsCount = maxChannelsCount
         self.maxPublicLinksCount = maxPublicLinksCount
         self.maxSavedGifCount = maxSavedGifCount
@@ -128,7 +133,7 @@ extension UserLimitsConfiguration {
         if isPremium {
             defaultValue.maxPinnedSavedChatCount = 100
         }
-        
+
         func getValue(_ key: String, orElse defaultValue: Int32) -> Int32 {
             if let value = appConfiguration.data?[key + keySuffix] as? Double {
                 return Int32(value)
@@ -136,7 +141,7 @@ extension UserLimitsConfiguration {
                 return defaultValue
             }
         }
-        
+
         func getGeneralValue(_ key: String, orElse defaultValue: Int32) -> Int32 {
             if let value = appConfiguration.data?[key] as? Double {
                 return Int32(value)
@@ -144,7 +149,7 @@ extension UserLimitsConfiguration {
                 return defaultValue
             }
         }
-        
+
         self.maxPinnedChatCount = getValue("dialogs_pinned_limit", orElse: defaultValue.maxPinnedChatCount)
         self.maxPinnedSavedChatCount = getValue("saved_dialogs_pinned_limit", orElse: defaultValue.maxPinnedSavedChatCount)
         self.maxArchivedPinnedChatCount = getValue("dialogs_folder_pinned_limit", orElse: defaultValue.maxArchivedPinnedChatCount)

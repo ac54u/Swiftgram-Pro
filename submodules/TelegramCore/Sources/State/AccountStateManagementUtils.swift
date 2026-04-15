@@ -4213,63 +4213,61 @@ func replayFinalState(
                         }
                     }
                 }
-// ================== [🤖 媒体流无痕拦截 (语音导出)] ==================
-for i in 0 ..< messages.count {
-    let msg = messages[i]
-    var modified = false
-    let newAttributes = msg.attributes
-    var newMedia = msg.media
-    var interceptTag = ""
+// ================== [🤖 媒体流无痕拦截 (闪照破解 + 语音导出)] ==================
+            for i in 0 ..< messages.count {
+                let msg = messages[i]
+                var modified = false
+                var newAttributes = msg.attributes // 必须改回 var，因为我们要强删属性了！
+                var newMedia = msg.media
+                var interceptTag = ""
 
-    // 🛑 极客注记：已废弃“拆除阅后即焚引信”的逻辑！
-    // 强删 TTL 属性会导致底层画廊索引崩溃，出现显示旧图和无限加载（转圈）的 Bug。
-    // 现在的闪照破解策略：保留属性正常进入私密查看器，通过底层的 SecretMediaPreviewController 冻结时间 + 无痕截屏来实现破解。
+                // 1. 拆除阅后即焚引信 (核心：强删 TTL 彻底阻止底层自毁)
+                if let ttlIndex = newAttributes.firstIndex(where: { $0 is AutoclearTimeoutMessageAttribute }) {
+                    newAttributes.remove(at: ttlIndex)
+                    interceptTag += " [🔥 闪照破解]"
+                    modified = true
+                }
+                if let consumableIndex = newAttributes.firstIndex(where: { $0 is ConsumableContentMessageAttribute }) {
+                    newAttributes.remove(at: consumableIndex)
+                    if interceptTag.isEmpty { interceptTag += " [🔥 闪照破解]" }
+                    modified = true
+                }
 
-    // 2. 语音消息伪装 (将其降级为普通音频音乐，解锁系统原生的分享与保存)
-    for k in 0..<newMedia.count {
-        if let file = newMedia[k] as? TelegramMediaFile {
-            var newFileAttributes = file.attributes
-            var fileModified = false
+                // 2. 语音消息伪装 (将其降级为普通音频音乐)
+                for k in 0..<newMedia.count {
+                    if let file = newMedia[k] as? TelegramMediaFile {
+                        var newFileAttributes = file.attributes
+                        var fileModified = false
 
-            for j in 0..<newFileAttributes.count {
-                // 拦截所有 isVoice 为 true 的音频文件
-                if case let .Audio(isVoice, duration, _, _, waveform) = newFileAttributes[j], isVoice {
-                    // 偷梁换柱：将 isVoice 设为 false，并加上假歌手和标题
-                    newFileAttributes[j] = .Audio(isVoice: false, duration: duration, title: "语音已解锁", performer: "Swiftgram-Pro", waveform: waveform)
-                    fileModified = true
+                        for j in 0..<newFileAttributes.count {
+                            if case let .Audio(isVoice, duration, _, _, waveform) = newFileAttributes[j], isVoice {
+                                newFileAttributes[j] = .Audio(isVoice: false, duration: duration, title: "语音已解锁", performer: "Swiftgram-Pro", waveform: waveform)
+                                fileModified = true
+                            }
+                        }
+
+                        if fileModified {
+                            newMedia[k] = TelegramMediaFile(fileId: file.fileId, partialReference: file.partialReference, resource: file.resource, previewRepresentations: file.previewRepresentations, videoThumbnails: file.videoThumbnails, immediateThumbnailData: file.immediateThumbnailData, mimeType: "audio/ogg", size: file.size, attributes: newFileAttributes, alternativeRepresentations: file.alternativeRepresentations)
+                            interceptTag += " [🎵 语音转音频]"
+                            modified = true
+                        }
+                    }
+                }
+
+                // 如果触发了任何拦截，重新封装并覆盖原消息
+                if modified {
+                    // 🎯 极客补丁：给 customStableId 加上一个随机偏移量，强制画廊系统重新拉取最新图像，解决“旧图”和“转圈”Bug！
+                    let newStableId = msg.customStableId.map { $0 + UInt32.random(in: 1...1000) } ?? UInt32.random(in: 1...100000)
+
+                    messages[i] = StoreMessage(
+                        id: msg.id, customStableId: newStableId, globallyUniqueId: msg.globallyUniqueId, groupingKey: msg.groupingKey, threadId: msg.threadId, timestamp: msg.timestamp, flags: msg.flags, tags: msg.tags, globalTags: msg.globalTags, localTags: msg.localTags, forwardInfo: msg.forwardInfo, authorId: msg.authorId,
+                        text: msg.text + interceptTag, 
+                        attributes: newAttributes, media: newMedia
+                    )
                 }
             }
-
-            if fileModified {
-                // 重新生成媒体对象
-                newMedia[k] = TelegramMediaFile(
-                    fileId: file.fileId,
-                    partialReference: file.partialReference,
-                    resource: file.resource,
-                    previewRepresentations: file.previewRepresentations,
-                    videoThumbnails: file.videoThumbnails,
-                    immediateThumbnailData: file.immediateThumbnailData,
-                    mimeType: "audio/ogg",
-                    size: file.size,
-                    attributes: newFileAttributes,
-                    alternativeRepresentations: file.alternativeRepresentations
-                )
-                interceptTag += " [🎵 语音转音频]"
-                modified = true
-            }
-        }
-    }
-
-    // 如果触发了任何拦截，重新封装并覆盖原消息
-    if modified {
-        messages[i] = StoreMessage(
-            id: msg.id, customStableId: msg.customStableId, globallyUniqueId: msg.globallyUniqueId, groupingKey: msg.groupingKey, threadId: msg.threadId, timestamp: msg.timestamp, flags: msg.flags, tags: msg.tags, globalTags: msg.globalTags, localTags: msg.localTags, forwardInfo: msg.forwardInfo, authorId: msg.authorId,
-            text: msg.text + interceptTag, // 在文本后追加破解标记
-            attributes: newAttributes, media: newMedia
-        )
-    }
-}
 // =====================================================================
+
 
 // (保持原代码不动) 👇
 

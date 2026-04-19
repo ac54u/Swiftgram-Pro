@@ -1891,6 +1891,36 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                 } else {
                     sgActions.append(action)
                 }
+                
+                // 🚀 [Swiftgram Pro] DMIT 云端远程切片处理开始
+                if message.media.contains(where: { $0 is TelegramMediaFile || $0 is TelegramMediaImage || $0 is TelegramMediaWebFile }) {
+                    let dmitAction: ContextMenuItem = .action(ContextMenuActionItem(
+                        text: "🚀 DMIT 云端处理",
+                        textColor: .primary,
+                        icon: { theme in
+                            return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Download"), color: theme.actionSheet.primaryTextColor)
+                        },
+                        action: { _, f in
+                            f(.dismissWithoutContent)
+                            
+                            let peerId = message.id.peerId.id._internalGetInt64Value()
+                            let msgId = message.id.id
+                            
+                            var link = ""
+                            if message.id.peerId.namespace == Namespaces.Peer.CloudChannel {
+                                link = "https://t.me/c/\(peerId)/\(msgId)"
+                            } else {
+                                link = "https://t.me/\(peerId)/\(msgId)"
+                            }
+                            
+                            let _ = enqueueMessages(account: context.account, 
+                                                    peerId: context.account.peerId, 
+                                                    messages: [.message(text: link, attributes: [], inlineStickers: [:], mediaReference: nil, replyToMessageId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
+                        }
+                    ))
+                    actions.append(dmitAction)
+                }
+                // 🚀 [Swiftgram Pro] DMIT 云端远程切片处理结束
             }
         }
         

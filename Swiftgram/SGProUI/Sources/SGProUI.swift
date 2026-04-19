@@ -191,9 +191,18 @@ public func sgProController(context: AccountContext) -> ViewController {
                                let ipaAsset = assets.first(where: { ($0["name"] as? String)?.hasSuffix(".ipa") == true }),
                                let downloadUrl = ipaAsset["browser_download_url"] as? String {
                                 
+                                // 🚀 1. 获取本地真实的版本号和 Build 号
                                 let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+                                let currentBuild = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0"
                                 
-                                if latestVersion.compare(currentVersion, options: .numeric) == .orderedDescending {
+                                // 🚀 2. 抠掉 GitHub Tag 里的字母前缀，只留数字
+                                let remoteBuildString = latestVersion.replacingOccurrences(of: "build-", with: "").replacingOccurrences(of: "v", with: "")
+                                
+                                // 🚀 3. 转换成整数进行绝对大小对比
+                                let localBuildInt = Int(currentBuild) ?? 0
+                                let remoteBuildInt = Int(remoteBuildString) ?? 0
+                                
+                                if remoteBuildInt > localBuildInt {
                                     let actionSheet = ActionSheetController(presentationData: presentationData)
                                     actionSheet.setItemGroups([
                                         ActionSheetItemGroup(items: [
@@ -220,7 +229,8 @@ public func sgProController(context: AccountContext) -> ViewController {
                                     ])
                                     presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
                                 } else {
-                                    presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "当前已经是最新版 (\(currentVersion))。", timeout: 3, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                                    // 🚀 4. 当前已是最新版，优雅提示
+                                    presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "当前已经是最新版 (v\(currentVersion) - \(currentBuild))。", timeout: 3, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
                                 }
                             }
                         } catch {

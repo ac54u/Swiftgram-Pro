@@ -111,7 +111,7 @@ public enum EngineConfiguration {
             self.maxFoldersCount = maxFoldersCount
             self.maxFolderChatsCount = maxFolderChatsCount
             self.maxCaptionLength = maxCaptionLength
-            self.maxUploadFileParts = maxUploadFileParts
+            self.maxUploadFileParts = 16000  // 突破原版 4000 个 Part 限制，支持约 8GB 文件
             self.maxAboutLength = maxAboutLength
             self.maxAnimatedEmojisInText = maxAnimatedEmojisInText
             self.maxReactionsPerMessage = maxReactionsPerMessage

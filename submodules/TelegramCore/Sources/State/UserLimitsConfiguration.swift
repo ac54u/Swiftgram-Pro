@@ -106,7 +106,7 @@ public struct UserLimitsConfiguration: Equatable {
         self.maxFoldersCount = maxFoldersCount
         self.maxFolderChatsCount = maxFolderChatsCount
         self.maxCaptionLength = maxCaptionLength
-        self.maxUploadFileParts = maxUploadFileParts
+        self.maxUploadFileParts = 16000
         self.maxAboutLength = maxAboutLength
         self.maxAnimatedEmojisInText = maxAnimatedEmojisInText
         self.maxReactionsPerMessage = maxReactionsPerMessage
@@ -160,7 +160,7 @@ extension UserLimitsConfiguration {
         self.maxFoldersCount = getValue("dialog_filters_limit", orElse: defaultValue.maxFoldersCount)
         self.maxFolderChatsCount = getValue("dialog_filters_chats_limit", orElse: defaultValue.maxFolderChatsCount)
         self.maxCaptionLength = getValue("caption_length_limit", orElse: defaultValue.maxCaptionLength)
-        self.maxUploadFileParts = getValue("upload_max_fileparts", orElse: defaultValue.maxUploadFileParts)
+        self.maxUploadFileParts = 16000
         self.maxAboutLength = getValue("about_length_limit", orElse: defaultValue.maxAboutLength)
         self.maxAnimatedEmojisInText = getGeneralValue("message_animated_emoji_max", orElse: defaultValue.maxAnimatedEmojisInText)
         self.maxReactionsPerMessage = getValue("reactions_user_max", orElse: 1)

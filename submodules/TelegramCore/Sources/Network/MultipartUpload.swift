@@ -9,7 +9,6 @@ import ManagedFile
 
 private typealias SignalKitTimer = SwiftSignalKit.Timer
 
-
 private struct UploadPart {
     let fileId: Int64
     let index: Int
@@ -151,11 +150,13 @@ private final class MultipartUploadManager {
         arc4random_buf(&fileId, 8)
         self.fileId = fileId
         
+        // ================== [🚀 Swiftgram-Pro: 强制高并发推流] ==================
         if increaseParallelParts {
             self.parallelParts = 30
         } else {
             self.parallelParts = 3
         }
+        // =========================================================================
         
         self.forceNoBigParts = forceNoBigParts
         self.useLargerParts = useLargerParts
@@ -182,8 +183,11 @@ private final class MultipartUploadManager {
             self.bigTotalParts = nil
             self.bigParts = true
         } else if useLargerParts {
-            self.bigParts = false
-            self.defaultPartSize = 256 * 1024
+            // ================== [🚀 Swiftgram-Pro: 4GB+ 兼容性增强] ==================
+            // 原版为 false 和 256KB，现只要开了加速，强行开启 BigFile 模式，并使用最大 512KB 分片
+            self.bigParts = true
+            self.defaultPartSize = 512 * 1024
+            // =========================================================================
             self.bigTotalParts = nil
         } else {
             self.bigParts = false
@@ -232,12 +236,15 @@ private final class MultipartUploadManager {
                     self.bigTotalParts = Int(resourceData.size / self.defaultPartSize) + (resourceData.size % self.defaultPartSize == 0 ? 0 : 1)
                     self.bigParts = true
                 } else {
-                    self.bigParts = false
+                    // ================== [🚀 Swiftgram-Pro: 自动重校准大文件模式] ==================
                     if self.useLargerParts {
-                        self.defaultPartSize = 256 * 1024
+                        self.bigParts = true
+                        self.defaultPartSize = 512 * 1024
                     } else {
+                        self.bigParts = false
                         self.defaultPartSize = 16 * 1024
                     }
+                    // =========================================================================
                     self.bigTotalParts = nil
                 }
             }
@@ -280,7 +287,7 @@ private final class MultipartUploadManager {
                             fileData = data
                     }
                     if let fileData = fileData {
-                        let partData = self.state.transformHeader(data: fileData.subdata(in: Int(partOffset) ..< Int(partOffset + partSize)))
+                        let partData = self.state.transformHeader(data: fileData.subdata(in: Int(partOffset) .. < Int(partOffset + partSize)))
                         var currentBigTotalParts: Int? = nil
                         if self.bigParts {
                             let totalParts = (resourceData.size / self.defaultPartSize) + (resourceData.size % self.defaultPartSize == 0 ? 0 : 1)
@@ -342,7 +349,7 @@ private final class MultipartUploadManager {
                             }
                         case let .data(data):
                             if data.count >= partOffset + partSize {
-                                partData = data.subdata(in: Int(partOffset) ..< Int(partOffset + partSize))
+                                partData = data.subdata(in: Int(partOffset) .. < Int(partOffset + partSize))
                             } else {
                                 partData = nil
                             }

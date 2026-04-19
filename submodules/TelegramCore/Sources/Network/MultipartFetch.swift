@@ -565,23 +565,25 @@ private final class MultipartFetchManager {
         }
         
         if isStory {
-            self.defaultPartSize = 512 * 1024
+            self.defaultPartSize = 1024 * 1024
             if let size = size, size > self.defaultPartSize {
-                self.parallelParts = 4
+                self.parallelParts = 16
             } else {
-                self.parallelParts = 1
+                self.parallelParts = 4
             }
         } else if let size = size {
             if size <= 512 * 1024 {
-                self.defaultPartSize = 16 * 1024
-                self.parallelParts = 4 * 4
+                self.defaultPartSize = 32 * 1024
+                self.parallelParts = 16
             } else {
-                self.defaultPartSize = 512 * 1024
-                self.parallelParts = 8
+                // ================== [🚀 Swiftgram-Pro: 极端下载引擎] ==================
+                self.defaultPartSize = 1024 * 1024 // 1MB 分块大小
+                self.parallelParts = 32            // 强行拉爆 32 个并发请求
+                // =====================================================================
             }
         } else {
-            self.parallelParts = 1
-            self.defaultPartSize = 128 * 1024
+            self.parallelParts = 16
+            self.defaultPartSize = 512 * 1024
         }
         
         if let info = parameters?.info as? TelegramCloudMediaResourceFetchInfo {
@@ -624,68 +626,18 @@ private final class MultipartFetchManager {
         self.reportCompleteSize = reportCompleteSize
         self.finishWithError = finishWithError
         
-        /*if resource.id.stringRepresentation == "telegram-cloud-document-1-4922941873166746479" {
-            let tempRanges = Promise<[(Range<Int64>, MediaBoxFetchPriority)]>()
-            
-            tempRanges.set(.single([(0 ..< Int64.max, .default)]))
-            Thread(block: {
-                for i in 0 ..< 10 {
-                    Thread.sleep(forTimeInterval: 0.1)
-                    
-                    var randomSet = RangeSet<Int64>()
-                    if i % 2 == 0 {
-                        for _ in 0 ..< 10 {
-                            let lower: Int64 = Int64.random(in: 0 ..< 4980736 + 131072)
-                            let upper: Int64 = Int64.random(in: lower ..< (lower + 1234))
-                            randomSet.insert(contentsOf: lower ..< upper)
-                            var ranges: [(Range<Int64>, MediaBoxFetchPriority)] = []
-                            for range in randomSet.ranges {
-                                ranges.append((range, .default))
-                            }
-                            tempRanges.set(.single(ranges))
-                        }
-                    }
+        self.rangesDisposable = (intervals
+        |> deliverOn(self.queue)).start(next: { [weak self] intervals in
+            if let strongSelf = self {
+                if let _ = strongSelf.currentIntervals {
+                    strongSelf.currentIntervals = intervals
+                    strongSelf.checkState()
+                } else {
+                    strongSelf.currentIntervals = intervals
+                    strongSelf.checkState()
                 }
-                
-                Thread.sleep(forTimeInterval: 0.1)
-                tempRanges.set(.single([]))
-                
-                Thread.sleep(forTimeInterval: 5.0)
-                tempRanges.set(.single([(0 ..< Int64.max, .default)]))
-            }).start()
-            
-            self.rangesDisposable = (tempRanges.get()
-            |> deliverOn(self.queue)).start(next: { [weak self] intervals in
-                if let strongSelf = self {
-                    if let _ = strongSelf.currentIntervals {
-                        strongSelf.currentIntervals = intervals
-                        strongSelf.checkState()
-                    } else {
-                        strongSelf.currentIntervals = intervals
-                        strongSelf.checkState()
-                    }
-                }
-            })
-        } else {*/
-            self.rangesDisposable = (intervals
-            |> deliverOn(self.queue)).start(next: { [weak self] intervals in
-                if let strongSelf = self {
-                    if let _ = strongSelf.currentIntervals {
-                        strongSelf.currentIntervals = intervals
-                        strongSelf.checkState()
-                    } else {
-                        strongSelf.currentIntervals = intervals
-                        strongSelf.checkState()
-                    }
-                }
-            })
-        //}
-        
-        /*self.markSpeedRecord()
-        self.speedTimer = SwiftSignalKit.Timer(timeout: 1.0, repeat: true, completion: { [weak self] in
-            self?.markSpeedRecord()
-        }, queue: self.queue)
-        self.speedTimer?.start()*/
+            }
+        })
     }
     
     deinit {

@@ -45,30 +45,16 @@ final class StoryItemImageView: UIView {
         self.contentView.image = image
         
         // ================== [🚀 Swiftgram-Pro: 彻底粉碎防截屏黑屏防线] ==================
-        // 强制把 isCaptureProtected 当作 false 处理，彻底拒绝创建防截屏图层！
-        let forcedIsCaptureProtected = false 
-        // =========================================================================
-
-        if forcedIsCaptureProtected {
-            let captureProtectedView: UITextField
-            if let current = self.captureProtectedView {
-                captureProtectedView = current
-            } else {
-                captureProtectedView = UITextField(frame: self.contentView.frame)
-                captureProtectedView.isSecureTextEntry = false // 再次确保安全
-                self.captureProtectedView = captureProtectedView
-                self.layer.addSublayer(captureProtectedView.layer)
-                captureProtectedView.layer.sublayers?.first?.addSublayer(self.contentView.layer)
-            }
-        } else {
-            if self.contentView.layer.superlayer !== self.layer {
-                self.layer.addSublayer(self.contentView.layer)
-            }
-            if let captureProtectedView = self.captureProtectedView {
-                self.captureProtectedView = nil
-                captureProtectedView.layer.removeFromSuperlayer()
-            }
+        // 修复 Bazel/Swift 编译死代码(Dead Code)报错：
+        // 直接抛弃 UITextField 安全图层逻辑，强制将图片直接挂载到普通 Layer 上！
+        if self.contentView.layer.superlayer !== self.layer {
+            self.layer.addSublayer(self.contentView.layer)
         }
+        if let captureProtectedView = self.captureProtectedView {
+            self.captureProtectedView = nil
+            captureProtectedView.layer.removeFromSuperlayer()
+        }
+        // =========================================================================
     }
     
     func update(context: AccountContext, strings: PresentationStrings, peer: EnginePeer, storyId: Int32, media: EngineMedia, size: CGSize, isCaptureProtected: Bool, attemptSynchronous: Bool, transition: ComponentTransition) {

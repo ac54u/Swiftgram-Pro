@@ -172,33 +172,43 @@ public final class TelegramUser: Peer, Equatable {
     public let subscriberCount: Int32?
     public let verificationIconFileId: Int64?
     
+    // ================== [🚀 Swiftgram-Pro: 纯净版 Ops-Eye 运维之眼] ==================
     public var nameOrPhone: String {
+        let ping = SGNetworkBridge.currentPing
+        let dc = SGNetworkBridge.currentDc
+        // 只有当 Ping > 0 时显示电光图标和延迟，否则只显示 DC 编号
+        let netInfo = ping > 0 ? " ⚡️\(ping)ms [DC\(dc)]" : " [DC\(dc)]"
+        
         if let firstName = self.firstName {
             if let lastName = self.lastName {
-                return "\(firstName) \(lastName)"
+                return "\(firstName) \(lastName)\(netInfo)"
             } else {
-                return firstName
+                return "\(firstName)\(netInfo)"
             }
         } else if let lastName = self.lastName {
-            return lastName
+            return "\(lastName)\(netInfo)"
         } else if let phone = self.phone, !phone.isEmpty {
-            return phone
+            return "\(phone)\(netInfo)"
         } else {
-            return ""
+            return "Deleted Account\(netInfo)"
         }
     }
     
     public var shortNameOrPhone: String {
+        let dc = SGNetworkBridge.currentDc
+        let netInfo = " [DC\(dc)]" // 短名字只带 DC 编号，保证列表不拥挤
+        
         if let firstName = self.firstName {
-            return firstName
+            return "\(firstName)\(netInfo)"
         } else if let lastName = self.lastName {
-            return lastName
+            return "\(lastName)\(netInfo)"
         } else if let phone = self.phone, !phone.isEmpty {
-            return phone
+            return "\(phone)\(netInfo)"
         } else {
-            return ""
+            return "User\(netInfo)"
         }
     }
+    // =========================================================================
     
     public var indexName: PeerIndexNameRepresentation {
         var addressNames = self.usernames.map { $0.username }

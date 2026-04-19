@@ -630,6 +630,11 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
             let requestService = MTRequestMessageService(context: context)!
             let connectionStatusDelegate = MTProtoConnectionStatusDelegate()
             connectionStatusDelegate.action = { [weak connectionStatus] info in
+                // 🚀 [SG-Pro 注入]: 实时抓取网络延迟
+                if let rtt = context.roundTripTime() as Double?, rtt > 0 {
+                    SGNetworkBridge.currentPing = Int32(rtt * 1000)
+                }
+                // ==========================================
                 if info.flags.contains(.Connected) {
                     if !info.flags.intersection([.UpdatingConnectionContext, .PerformingServiceTasks]).isEmpty {
                         connectionStatus?.set(.single(.updating(proxyAddress: info.proxyAddress)))
@@ -872,6 +877,8 @@ public final class Network: NSObject, MTRequestMessageServiceDelegate {
         
         self.queue = queue
         self.datacenterId = datacenterId
+        // 🚀 [SG-Pro 注入]
+        SGNetworkBridge.currentDc = Int32(datacenterId)
         self.context = context
         self._contextProxyId = ValuePromise((context.apiEnvironment.socksProxySettings as MTSocksProxySettings?).flatMap(NetworkContextProxyId.init(settings:)), ignoreRepeated: true)
         self.mtProto = mtProto

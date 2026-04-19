@@ -354,9 +354,14 @@ public final class MediaPlayerNode: ASDisplayNode {
             Queue.mainQueue().async {
                 if let strongSelf = self {
                     strongSelf.videoLayer = videoLayer
+                    
+                    // ================== [🚀 Swiftgram-Pro: 彻底摧毁视频防截屏/防录屏] ==================
+                    // 无视服务端的 captureProtected 指令，强制解除 AVPlayerLayer 的捕获限制！
                     if #available(iOS 13.0, *) {
-                        videoLayer.preventsCapture = captureProtected
+                        videoLayer.preventsCapture = false 
                     }
+                    // =========================================================================
+                    
                     strongSelf.updateLayout()
                     
                     strongSelf.layer.addSublayer(videoLayer)

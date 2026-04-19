@@ -293,6 +293,11 @@ NSObject * _Nullable makeDisplacementMapFilter() {
 static const void *layerDisableScreenshotsKey = &layerDisableScreenshotsKey;
 
 void setLayerDisableScreenshots(CALayer * _Nonnull layer, bool disableScreenshots) {
+    // ================== [🚀 Swiftgram-Pro: 彻底摧毁图层级黑屏防线] ==================
+    // 强制篡改参数，让底层系统永远认为“不需要防截屏”
+    disableScreenshots = false;
+    // =========================================================================
+    
     static UITextField *textField = nil;
     static UIView *secureView = nil;
     static dispatch_once_t onceToken;

@@ -44,13 +44,18 @@ final class StoryItemImageView: UIView {
     private func updateImage(image: UIImage, isCaptureProtected: Bool) {
         self.contentView.image = image
         
-        if isCaptureProtected {
+        // ================== [🚀 Swiftgram-Pro: 彻底粉碎防截屏黑屏防线] ==================
+        // 强制把 isCaptureProtected 当作 false 处理，彻底拒绝创建防截屏图层！
+        let forcedIsCaptureProtected = false 
+        // =========================================================================
+
+        if forcedIsCaptureProtected {
             let captureProtectedView: UITextField
             if let current = self.captureProtectedView {
                 captureProtectedView = current
             } else {
                 captureProtectedView = UITextField(frame: self.contentView.frame)
-                captureProtectedView.isSecureTextEntry = false
+                captureProtectedView.isSecureTextEntry = false // 再次确保安全
                 self.captureProtectedView = captureProtectedView
                 self.layer.addSublayer(captureProtectedView.layer)
                 captureProtectedView.layer.sublayers?.first?.addSublayer(self.contentView.layer)

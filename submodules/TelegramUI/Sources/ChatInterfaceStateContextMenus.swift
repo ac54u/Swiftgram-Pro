@@ -1915,7 +1915,7 @@ func contextMenuForChatPresentationInterfaceState(chatPresentationInterfaceState
                             
                             let _ = enqueueMessages(account: context.account, 
                                                     peerId: context.account.peerId, 
-                                                    messages: [.message(text: link, attributes: [], inlineStickers: [:], mediaReference: nil, replyToMessageId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
+                                                    messages: [.message(text: link, attributes: [], inlineStickers: [:], mediaReference: nil, threadId: nil, replyToMessageId: nil, replyToStoryId: nil, localGroupingKey: nil, correlationId: nil, bubbleUpEmojiOrStickersets: [])]).start()
                         }
                     ))
                     actions.append(dmitAction)

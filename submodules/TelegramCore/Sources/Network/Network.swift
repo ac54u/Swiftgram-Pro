@@ -630,12 +630,7 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
             let requestService = MTRequestMessageService(context: context)!
             let connectionStatusDelegate = MTProtoConnectionStatusDelegate()
             connectionStatusDelegate.action = { [weak connectionStatus] info in
-                // 🚀 [SG-Pro 注入]: 修正后的 RTT 抓取逻辑
-                // 注意方法名：roundTripTime(forDatacenterId:)
-                let rtt = context.roundTripTime(forDatacenterId: Int(datacenterId))
-                if rtt > 0 {
-                    SGNetworkBridge.currentPing = Int32(rtt * 1000)
-                }
+                // 🚀 [SG-Pro 注入]: 暂时撤销 Ping 抓取，保留下方 init 中的 DC 抓取即可
                 // ==========================================
 
                 if info.flags.contains(.Connected) {

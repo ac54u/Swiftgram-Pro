@@ -630,11 +630,14 @@ func initializedNetwork(accountId: AccountRecordId, arguments: NetworkInitializa
             let requestService = MTRequestMessageService(context: context)!
             let connectionStatusDelegate = MTProtoConnectionStatusDelegate()
             connectionStatusDelegate.action = { [weak connectionStatus] info in
-                // 🚀 [SG-Pro 注入]: 实时抓取网络延迟
-                if let rtt = context.roundTripTime() as Double?, rtt > 0 {
+                // 🚀 [SG-Pro 注入]: 实时抓取特定数据中心的网络延迟
+                // MTContext 的方法需要传入当前的 datacenterId
+                let rtt = context.roundTripTimeForDatacenter(withId: datacenterId)
+                if rtt > 0 {
                     SGNetworkBridge.currentPing = Int32(rtt * 1000)
                 }
                 // ==========================================
+
                 if info.flags.contains(.Connected) {
                     if !info.flags.intersection([.UpdatingConnectionContext, .PerformingServiceTasks]).isEmpty {
                         connectionStatus?.set(.single(.updating(proxyAddress: info.proxyAddress)))

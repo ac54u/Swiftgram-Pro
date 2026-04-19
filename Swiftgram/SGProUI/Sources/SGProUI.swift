@@ -17,7 +17,6 @@ import SettingsUI
 import SGSimpleSettings
 import SGLogging
 
-
 private enum SGProControllerSection: Int32, SGItemListSection {
     case base
     case appearance
@@ -43,6 +42,7 @@ private enum SGProOneFromManySetting: String {
 
 private enum SGProAction {
     case resetIAP
+    case checkUpdate // 🚀 [SG-Pro 注入 1/3]: 注册检查更新事件
 }
 
 private typealias SGProControllerEntry = SGItemListUIEntry<SGProControllerSection, SGProToggles, AnyHashable, SGProOneFromManySetting, SGProDisclosureLink, SGProAction>
@@ -56,6 +56,9 @@ private func SGProControllerEntries(presentationData: PresentationData) -> [SGPr
     entries.append(.disclosure(id: id.count, section: .base, link: .sessionBackupManager, text: "SessionBackup.Title".i18n(lang)))
     entries.append(.disclosure(id: id.count, section: .base, link: .messageFilter, text: "MessageFilter.Title".i18n(lang)))
     entries.append(.toggle(id: id.count, section: .base, settingName: .inputToolbar, value: SGSimpleSettings.shared.inputToolbar, text: "InputToolbar.Title".i18n(lang), enabled: true))
+    
+    // 🚀 [SG-Pro 注入 2/3]: 在基础设置栏里添加 OTA 更新按钮
+    entries.append(.action(id: id.count, section: .base, actionType: .checkUpdate, text: "🚀 检测并更新 SG-Pro (OTA)", kind: .generic))
     
     entries.append(.header(id: id.count, section: .notifications, text: presentationData.strings.Notifications_Title.uppercased(), badge: nil))
     entries.append(.oneFromManySelector(id: id.count, section: .notifications, settingName: .pinnedMessageNotifications, text: "Notifications.PinnedMessages.Title".i18n(lang), value: "Notifications.PinnedMessages.value.\(SGSimpleSettings.shared.pinnedMessageNotifications)".i18n(lang), enabled: true))
@@ -163,6 +166,73 @@ public func sgProController(context: AccountContext) -> ViewController {
                     ),
                     nil)
                 })
+            
+            // 🚀 [SG-Pro 注入 3/3]: 处理点击检查更新的核心网络与弹窗逻辑
+            case .checkUpdate:
+                // 先弹出一个提示，告诉用户正在拉取
+                presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "正在请求 GitHub 获取最新版本...", timeout: 2, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                
+                let url = URL(string: "https://api.github.com/repos/ac54u/Swiftgram-Pro/releases/latest")!
+                var request = URLRequest(url: url)
+                request.timeoutInterval = 8.0 // 8秒超时
+                
+                URLSession.shared.dataTask(with: request) { data, response, error in
+                    DispatchQueue.main.async {
+                        guard let data = data, error == nil else {
+                            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "网络超时，请检查代理或网络连接。", timeout: 3, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                            return
+                        }
+                        
+                        do {
+                            if let json = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+                               let latestVersion = json["tag_name"] as? String,
+                               let assets = json["assets"] as? [[String: Any]],
+                               let ipaAsset = assets.first(where: { ($0["name"] as? String)?.hasSuffix(".ipa") == true }),
+                               let downloadUrl = ipaAsset["browser_download_url"] as? String {
+                                
+                                let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.0.0"
+                                
+                                // 简单判断是否大于当前版本
+                                if latestVersion.compare(currentVersion, options: .numeric) == .orderedDescending {
+                                    // 发现新版本！弹出极客风格的确认框
+                                    let actionSheet = ActionSheetController(presentationData: presentationData)
+                                    actionSheet.setItemGroups([
+                                        ActionSheetItemGroup(items: [
+                                            ActionSheetButtonItem(title: "🔥 发现新版本: \(latestVersion)", color: .accent, action: { [weak actionSheet] in
+                                                actionSheet?.dismissAnimated()
+                                            }),
+                                            ActionSheetButtonItem(title: "⚡️ 通过 TrollStore 静默安装", color: .constructive, action: { [weak actionSheet] in
+                                                actionSheet?.dismissAnimated()
+                                                // 组装巨魔专属直装链接
+                                                if let encodedUrl = downloadUrl.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                                                   let trollStoreUrl = URL(string: "trollstore://install?url=\(encodedUrl)") {
+                                                    if UIApplication.shared.canOpenURL(trollStoreUrl) {
+                                                        UIApplication.shared.open(trollStoreUrl)
+                                                    } else {
+                                                        // 没装巨魔，跳去浏览器下载
+                                                        UIApplication.shared.open(URL(string: "https://github.com/ac54u/Swiftgram-Pro/releases/latest")!)
+                                                    }
+                                                }
+                                            })
+                                        ]),
+                                        ActionSheetItemGroup(items: [
+                                            ActionSheetButtonItem(title: "暂不更新", color: .accent, font: .bold, action: { [weak actionSheet] in
+                                                actionSheet?.dismissAnimated()
+                                            })
+                                        ])
+                                    ])
+                                    presentControllerImpl?(actionSheet, ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
+                                } else {
+                                    presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "当前已经是最新版 (\(currentVersion))，无需更新。", timeout: 3, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                                }
+                            } else {
+                                presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "API 返回格式异常，未找到 IPA 文件。", timeout: 3, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                            }
+                        } catch {
+                            presentControllerImpl?(UndoOverlayController(presentationData: presentationData, content: .info(title: nil, text: "JSON 解析失败。", timeout: 2, customUndoText: nil), elevatedLayout: false, action: { _ in return false }), nil)
+                        }
+                    }
+                }.resume()
         }
     })
     
@@ -190,5 +260,3 @@ public func sgProController(context: AccountContext) -> ViewController {
     
     return controller
 }
-
-

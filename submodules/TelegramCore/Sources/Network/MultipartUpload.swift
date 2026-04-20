@@ -28,7 +28,7 @@ private final class MultipartUploadState {
     let aesKey: Data
     var aesIv: Data
     var effectiveSize: Int64 = 0
-    
+
     init(encryptionKey: SecretFileEncryptionKey?) {
         if let encryptionKey = encryptionKey {
             self.aesKey = encryptionKey.aesKey
@@ -38,13 +38,13 @@ private final class MultipartUploadState {
             self.aesIv = Data()
         }
     }
-    
+
     func transformHeader(data: Data) -> Data {
         assert(self.aesKey.isEmpty)
         self.effectiveSize += Int64(data.count)
         return data
     }
-    
+
     func transform(data: Data) -> Data {
         if self.aesKey.count != 0 {
             var encryptedData = data
@@ -73,7 +73,7 @@ private final class MultipartUploadState {
             return data
         }
     }
-    
+
     func finalize() -> Int64 {
         return self.effectiveSize
     }
@@ -90,7 +90,7 @@ private struct MultipartIntermediateResult {
 private enum MultipartUploadData {
     case resourceData(MediaResourceData)
     case data(Data)
-    
+
     var size: Int64 {
         switch self {
         case let .resourceData(data):
@@ -122,58 +122,58 @@ private final class MultipartUploadManager {
     var bigParts: Bool
     private let forceNoBigParts: Bool
     private let useLargerParts: Bool
-    
+
     let queue = Queue()
     let fileId: Int64
-    
+
     let dataSignal: Signal<MultipartUploadData, NoError>
-    
+
     var committedOffset: Int64
     let uploadPart: (UploadPart) -> Signal<Void, UploadPartError>
     let progress: (Float) -> Void
     let completed: (MultipartIntermediateResult?) -> Void
-    
+
     var uploadingParts: [Int64: (Int64, Disposable)] = [:]
     var uploadedParts: [Int64: Int64] = [:]
-    
+
     let dataDisposable = MetaDisposable()
     var resourceData: MultipartUploadData?
-    
+
     var headerPartState: HeaderPartState
-    
+
     let state: MultipartUploadState
-    
+
     init(headerSize: Int32, data: Signal<MultipartUploadData, NoError>, encryptionKey: SecretFileEncryptionKey?, hintFileSize: Int64?, hintFileIsLarge: Bool, forceNoBigParts: Bool, useLargerParts: Bool, increaseParallelParts: Bool, uploadPart: @escaping (UploadPart) -> Signal<Void, UploadPartError>, progress: @escaping (Float) -> Void, completed: @escaping (MultipartIntermediateResult?) -> Void) {
         self.dataSignal = data
-        
+
         var fileId: Int64 = 0
         arc4random_buf(&fileId, 8)
         self.fileId = fileId
-        
-        // ================== [🚀 Swiftgram-Pro: 强制高并发推流] ==================
+
+        // ================== [🚀 Swiftgram-Pro: 强制高并发推流 (安全修复版)] ==================
         if increaseParallelParts {
-            self.parallelParts = 30
+            self.parallelParts = 4 // 极限且安全的并发，防止 TCP 踩踏
         } else {
-            self.parallelParts = 3
+            self.parallelParts = 2 // 兜底求稳并发
         }
-        // =========================================================================
-        
+        // =================================================================================
+
         self.forceNoBigParts = forceNoBigParts
         self.useLargerParts = useLargerParts
-        
+
         self.state = MultipartUploadState(encryptionKey: encryptionKey)
-        
+
         self.committedOffset = 0
         self.uploadPart = uploadPart
         self.progress = progress
         self.completed = completed
-        
+
         if headerSize == 0 {
             self.headerPartState = .ready
         } else {
             self.headerPartState = .notStarted
         }
-        
+
         if let hintFileSize = hintFileSize, hintFileSize > 10 * 1024 * 1024, !forceNoBigParts {
             self.defaultPartSize = 512 * 1024
             self.bigTotalParts = Int((hintFileSize / self.defaultPartSize) + (hintFileSize % self.defaultPartSize == 0 ? 0 : 1))
@@ -183,10 +183,10 @@ private final class MultipartUploadManager {
             self.bigTotalParts = nil
             self.bigParts = true
         } else if useLargerParts {
-            // ================== [🚀 Swiftgram-Pro: 4GB+ 兼容性增强] ==================
+            // ================== [🚀 Swiftgram-Pro: 4GB+ 兼容性增强 & 提速] ==================
             self.bigParts = true
-            self.defaultPartSize = 512 * 1024
-            // =========================================================================
+            self.defaultPartSize = 1024 * 1024 // 单块大小提升至 1MB
+            // ===============================================================================
             self.bigTotalParts = nil
         } else {
             self.bigParts = false
@@ -194,11 +194,11 @@ private final class MultipartUploadManager {
             self.bigTotalParts = nil
         }
     }
-    
+
     deinit {
         let uploadingParts = self.uploadingParts
         let dataDisposable = self.dataDisposable
-        
+
         self.queue.async {
             for (_, (_, disposable)) in uploadingParts {
                 disposable.dispose()
@@ -206,7 +206,7 @@ private final class MultipartUploadManager {
             dataDisposable.dispose()
         }
     }
-    
+
     func start() {
         self.queue.async {
             self.dataDisposable.set((self.dataSignal
@@ -218,7 +218,7 @@ private final class MultipartUploadManager {
             }))
         }
     }
-    
+
     func cancel() {
         self.queue.async {
             for (_, (_, disposable)) in self.uploadingParts {
@@ -226,7 +226,7 @@ private final class MultipartUploadManager {
             }
         }
     }
-    
+
     func checkState() {
         if let resourceData = self.resourceData, resourceData.complete && resourceData.size != 0 {
             if self.committedOffset == 0 && self.uploadedParts.isEmpty && self.uploadingParts.isEmpty {
@@ -238,7 +238,7 @@ private final class MultipartUploadManager {
                     // ================== [🚀 Swiftgram-Pro: 自动重校准大文件模式] ==================
                     if self.useLargerParts {
                         self.bigParts = true
-                        self.defaultPartSize = 512 * 1024
+                        self.defaultPartSize = 1024 * 1024 // 同步提速至 1MB
                     } else {
                         self.bigParts = false
                         self.defaultPartSize = 16 * 1024
@@ -248,7 +248,7 @@ private final class MultipartUploadManager {
                 }
             }
         }
-        
+
         var updatedCommittedOffset = false
         for offset in self.uploadedParts.keys.sorted() {
             if offset == self.committedOffset {
@@ -263,7 +263,7 @@ private final class MultipartUploadManager {
                 self.progress(Float(self.committedOffset) / Float(resourceData.size))
             }
         }
-        
+
         if let resourceData = self.resourceData, resourceData.complete, self.committedOffset >= resourceData.size {
             switch self.headerPartState {
                 case .ready:
@@ -318,7 +318,7 @@ private final class MultipartUploadManager {
                     case .ready, .uploading:
                         break
                 }
-                
+
                 var nextOffset = self.committedOffset
                 for (offset, (size, _)) in self.uploadingParts {
                     nextOffset = max(nextOffset, offset + size)
@@ -326,10 +326,10 @@ private final class MultipartUploadManager {
                 for (offset, partSize) in self.uploadedParts {
                     nextOffset = max(nextOffset, offset + partSize)
                 }
-                
+
                 let partOffset = nextOffset
                 let partSize = min(resourceData.size - partOffset, self.defaultPartSize)
-                
+
                 if nextOffset < resourceData.size && partSize > 0 && (resourceData.complete || partSize == self.defaultPartSize) {
                     let partIndex = Int(partOffset / self.defaultPartSize)
                     let partData: Data?
@@ -414,7 +414,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
         case download(Download)
         case multiplexed(manager: MultiplexedRequestManager, datacenterId: Int, consumerId: Int64)
     }
-    
+
     let uploadInterface: Signal<UploadInterface, NoError>
     if useMultiplexedRequests {
         uploadInterface = .single(.multiplexed(manager: network.multiplexedRequestManager, datacenterId: network.datacenterId, consumerId: Int64.random(in: Int64.min ... Int64.max)))
@@ -424,7 +424,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
             return .download(download)
         }
     }
-    
+
     return uploadInterface
     |> mapToSignalPromotingError { uploadInterface -> Signal<MultipartUploadResult, MultipartUploadError> in
         return Signal { subscriber in
@@ -444,7 +444,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
                 }
                 encryptionKey = SecretFileEncryptionKey(aesKey: aesKey, aesIv: aesIv)
             }
-            
+
             let dataSignal: Signal<MultipartUploadData, NoError>
             let headerSize: Int32
             let fetchedResource: Signal<Void, FetchResourceError>
@@ -476,7 +476,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
                     }
                     fetchedResource = .complete()
             }
-            
+
             let onFloodWaitError: (String) -> Void = { [weak network] error in
                 guard let network else {
                     return
@@ -485,7 +485,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
                     network.addNetworkSpeedLimitedEvent(event: .upload)
                 }
             }
-            
+
             let manager = MultipartUploadManager(headerSize: headerSize, data: dataSignal, encryptionKey: encryptionKey, hintFileSize: hintFileSize, hintFileIsLarge: hintFileIsLarge, forceNoBigParts: forceNoBigParts, useLargerParts: useLargerParts || SGSimpleSettings.shared.uploadSpeedBoost, increaseParallelParts: increaseParallelParts || SGSimpleSettings.shared.uploadSpeedBoost, uploadPart: { part in
                 switch uploadInterface {
                 case let .download(download):
@@ -502,7 +502,7 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
                         var fingerprint: Int32 = 0
                         keyDigest.withUnsafeBytes { rawBytes -> Void in
                             let bytes = rawBytes.baseAddress!.assumingMemoryBound(to: UInt8.self)
-                            
+
                             withUnsafeMutableBytes(of: &fingerprint, { ptr -> Void in
                                 let uintPtr = ptr.baseAddress!.assumingMemoryBound(to: UInt8.self)
                                 uintPtr[0] = bytes[0] ^ bytes[4]
@@ -534,11 +534,11 @@ func multipartUpload(network: Network, postbox: Postbox, source: MultipartUpload
             })
 
             manager.start()
-            
+
             let fetchedResourceDisposable = fetchedResource.start(error: { _ in
                 subscriber.putError(.generic)
             })
-            
+
             return ActionDisposable {
                 manager.cancel()
                 fetchedResourceDisposable.dispose()

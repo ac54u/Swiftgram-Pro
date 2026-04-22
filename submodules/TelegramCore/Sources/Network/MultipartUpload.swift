@@ -150,12 +150,10 @@ private final class MultipartUploadManager {
         arc4random_buf(&fileId, 8)
         self.fileId = fileId
 
-        // ================== [🚀 Swiftgram-Pro: 强制高并发推流 (安全修复版)] ==================
-        if increaseParallelParts {
-            self.parallelParts = 4 // 极限且安全的并发，防止 TCP 踩踏
-        } else {
-            self.parallelParts = 2 // 兜底求稳并发
-        }
+        // ================== [🚀 Swiftgram-Pro: 强制安全高并发 (8条通道跑满)] ==================
+        // 彻底抛弃原有的动态判断，直接将并发锁死在 8 线程。
+        // 保留下方原版安全的分块(PartSize)逻辑，完美避开发送视频出现感叹号的 Bug！
+        self.parallelParts = 8
         // =================================================================================
 
         self.forceNoBigParts = forceNoBigParts

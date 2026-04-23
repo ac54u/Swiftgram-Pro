@@ -552,20 +552,9 @@ private final class MultipartFetchManager {
 
         self.completeSize = size
 
-        var isStory = false
-        if let info = parameters?.info as? TelegramCloudMediaResourceFetchInfo {
-            switch info.reference {
-            case let .media(media, _):
-                if case .story = media {
-                    isStory = true
-                }
-            default:
-                break
-            }
-        }
 
         // 🚀 [Swiftgram-Pro] 强制全局开启极限下载速度
-        // 无视文件类型，统统拉满 16 线程并发 + 1MB 极限分块！
+        // 无视文件类型，统统拉满 32 线程并发 + 1MB 极限分块！
         self.defaultPartSize = 1024 * 1024
         self.parallelParts = 32
 

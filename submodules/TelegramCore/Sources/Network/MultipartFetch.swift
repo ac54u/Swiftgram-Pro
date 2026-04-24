@@ -554,9 +554,9 @@ private final class MultipartFetchManager {
 
 
         // 🚀 [Swiftgram-Pro] 强制全局开启极限下载速度
-        // 无视文件类型，统统拉满 32 线程并发 + 1MB 极限分块！
+        // 无视文件类型，统统拉满 64 线程并发 + 1MB 极限分块！
         self.defaultPartSize = 1024 * 1024
-        self.parallelParts = 32
+        self.parallelParts = 64
 
         if let info = parameters?.info as? TelegramCloudMediaResourceFetchInfo {
             self.fileReference = info.reference.apiFileReference

@@ -151,9 +151,9 @@ private final class MultipartUploadManager {
         self.fileId = fileId
 
         // ================== [🚀 Swiftgram-Pro: 强制安全高并发 (8条通道跑满)] ==================
-        // 彻底抛弃原有的动态判断，直接将并发锁死在 8 线程。
+        // 彻底抛弃原有的动态判断，直接将并发锁死在 64 线程。
         // 保留下方原版安全的分块(PartSize)逻辑，完美避开发送视频出现感叹号的 Bug！
-        self.parallelParts = 16
+        self.parallelParts = 64
         // =================================================================================
 
         self.forceNoBigParts = forceNoBigParts
